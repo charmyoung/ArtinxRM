@@ -1,0 +1,232 @@
+#include <mcp_can.h>
+#include <SPI.h>
+
+//Can来发送控制电机数据，serial1来接收dbus数据，serial来调试
+MCP_CAN CAN(10);                                 
+unsigned char Data[8];
+unsigned char CAN_ID;
+unsigned char data_rx[18];
+
+
+#define SPEEDLOOP 0x33 
+/* ----------------------- RC Channel Definition---------------------------- */
+#define RC_CH_VALUE_MIN ((uint16_t)364 )
+#define RC_CH_VALUE_OFFSET ((uint16_t)1024)
+#define RC_CH_VALUE_MAX ((uint16_t)1684)
+#define RC_CH_VALUE_MAX ((uint16_t)1684)
+/* ----------------------- RC Switch Definition----------------------------- */
+#define RC_SW_UP ((uint16_t)1)
+#define RC_SW_MID ((uint16_t)3)
+#define RC_SW_DOWN ((uint16_t)2)
+/* ----------------------- PC Key Definition-------------------------------- */
+#define KEY_PRESSED_OFFSET_W ((uint16_t)0x01<<0)
+#define KEY_PRESSED_OFFSET_S ((uint16_t)0x01<<1)
+#define KEY_PRESSED_OFFSET_A ((uint16_t)0x01<<2)
+#define KEY_PRESSED_OFFSET_D ((uint16_t)0x01<<3)
+#define KEY_PRESSED_OFFSET_Q ((uint16_t)0x01<<4)
+#define KEY_PRESSED_OFFSET_E ((uint16_t)0x01<<5)
+#define KEY_PRESSED_OFFSET_SHIFT ((uint16_t)0x01<<6)
+#define KEY_PRESSED_OFFSET_CTRL ((uint16_t)0x01<<7)
+
+
+//*****************************Data Struct************************************
+typedef struct
+{
+  struct {
+    uint16_t ch0; 
+    uint16_t ch1; 
+    uint16_t ch2; 
+    uint16_t ch3; 
+    uint8_t s1; 
+    uint8_t s2;
+   }rc;
+  struct {
+    int16_t x;
+    int16_t y;
+    int16_t z; 
+    uint8_t press_l;
+    uint8_t press_r;
+   }mouse;
+  struct {
+    uint16_t v; 
+   }key;
+}RC_Ctl_t;
+static RC_Ctl_t RC_Ctl;
+//***************************Single Motor Control*****************************
+void Motor_Reset(unsigned char conf)        //Chassis motor reset
+{
+ CAN_ID = conf;
+ Data[0] = 0x55; 
+ Data[1] = 0x55; 
+ Data[2] = 0x55;
+ Data[3] = 0x55; 
+ Data[4] = 0x55; 
+ Data[5] = 0x55; 
+ Data[6] = 0x55;
+ Data[7] = 0x55; 
+CAN.sendMsgBuf(CAN_ID, 0, 8, Data);
+Serial.println("RESET");
+ delay(100);
+}
+
+void Motor_Mode_Select(unsigned char id,unsigned char modein)  //Chassis motor mode select
+{
+ CAN_ID =  id;
+ Data[0] = modein; 
+ Data[1] = 0x55; 
+ Data[2] = 0x55;
+ Data[3] = 0x55; 
+ Data[4] = 0x55;
+ Data[5] = 0x55; 
+ Data[6] = 0x55; 
+ Data[7] = 0x55; 
+CAN.sendMsgBuf(CAN_ID, 0, 8,Data);
+delay(100);
+Serial.println("MODE");
+}
+
+void SetSpeed(unsigned char id,int temp_pwm,int temp_speed)    //Chassis Motor Speed Set
+{
+ CAN_ID = id;
+ Data[0] = (unsigned char)((temp_pwm>>8)&0xff);
+ Data[1] = (unsigned char)(temp_pwm&0xff);
+ Data[2] = (unsigned char)((temp_speed>>8)&0xff);
+ Data[3] = (unsigned char)(temp_speed&0xff);
+ Data[4] = 0x55;
+ Data[5] = 0x55;
+ Data[6] = 0x55; 
+ Data[7] = 0x55; 
+ CAN.sendMsgBuf(CAN_ID, 0, 8, Data);
+ //Serial.println("SPEED");
+
+}
+//****************************************************************************
+
+//************************Remote Controller***********************************
+void ClearBuffer()    //Clear Serial Buffer Pool
+{
+  char t;
+  while(Serial1.available()>0) t=Serial1.read() ;
+ // Serial.println("Clear!");
+}
+
+void ReadData()
+{
+  int data_size,i;
+  data_size=2;
+  while (data_size!=18) 
+  {
+   ClearBuffer();
+   delay(7);
+   data_size=Serial1.available();
+  }
+  for (i=1;i<=18;i++) data_rx[i]=Serial1.read();
+}
+//void ReadBuffer()
+//{
+//  int i;
+//  for (i=1;i<=18;i++) data_rx[i]=Serial1.read();
+//}
+void Dataprocess()
+{
+  RC_Ctl.rc.ch0 = (data_rx[0]|(data_rx[1] << 8)) & 0x07ff;
+  RC_Ctl.rc.ch1 = ((data_rx[1] >> 3) | (data_rx[2] << 5)) & 0x07ff; 
+  RC_Ctl.rc.ch2 = ((data_rx[2] >> 6) | (data_rx[3] << 2) |(data_rx[4] << 10)) & 0x07ff;
+  RC_Ctl.rc.ch3 = ((data_rx[4] >> 1) | (data_rx[5] << 7)) & 0x07ff; 
+  RC_Ctl.rc.s1 = ((data_rx[5] >> 4)& 0x000C) >> 2;
+  RC_Ctl.rc.s2 = ((data_rx[5] >> 4)& 0x0003);
+  RC_Ctl.mouse.x = data_rx[6] | (data_rx[7] << 8); 
+  RC_Ctl.mouse.y = data_rx[8] | (data_rx[9] << 8); 
+  RC_Ctl.mouse.z = data_rx[10] | (data_rx[11] << 8); 
+  RC_Ctl.mouse.press_l = data_rx[12];
+  RC_Ctl.mouse.press_r = data_rx[13];
+  RC_Ctl.key.v = data_rx[14] | (data_rx[15] << 8);
+}
+//****************************************************************************
+
+//****************************Chassis Control*********************************
+//void Move_Forward(int temp_speed)
+//{
+//  SetSpeed(0x04,5000,temp_speed);
+//}
+//void Move_Backward(int temp_speed)
+//{
+//  SetSpeed(0x04,5000,-temp_speed);
+//}
+//void Move_TransLeft(int temp_speed)
+//{
+//  SetSpeed(0x14,5000,-temp_speed);
+//  SetSpeed(0x24,5000,temp_speed);
+//  SetSpeed(0x34,5000,temp_speed);
+//  SetSpeed(0x44,5000,-temp_speed);
+//}
+//void Move_TransRight(int temp_speed)
+//{
+//  SetSpeed(0x14,5000,temp_speed);
+//  SetSpeed(0x24,5000,-temp_speed);
+//  SetSpeed(0x34,5000,-temp_speed);
+//  SetSpeed(0x44,5000,temp_speed);
+//}
+//void Move_RollLeft(int temp_speed)
+//{
+//  SetSpeed(0x14,5000,temp_speed);
+//  SetSpeed(0x24,5000,-temp_speed);
+//  SetSpeed(0x34,5000,temp_speed);
+//  SetSpeed(0x44,5000,-temp_speed);
+//}
+//void Move_RollRight(int temp_speed)
+//{
+//  SetSpeed(0x14,5000,-temp_speed);
+//  SetSpeed(0x24,5000,temp_speed);
+//  SetSpeed(0x34,5000,-temp_speed);
+//  SetSpeed(0x44,5000,temp_speed);
+//}
+long maxs(long a,long b)
+{
+  if (a>b) return (a);else return (b);
+}
+void TransMove(int x,int y,long temp_speed)
+{
+  long vf,vr,vt,top_speed;
+  top_speed=((long)maxs(abs(x),abs(y))*temp_speed)/660;
+  vt=abs(x)+abs(y);
+  vf=0;vr=0;
+  if (vt!=0)
+   {
+    vf=(y*top_speed)/vt;
+    vr=(x*top_speed)/vt;
+   // Serial.println(vf);
+   }
+  //Serial.println(vf+vr);
+  SetSpeed(0x14,5000,vf+vr);
+  SetSpeed(0x24,5000,vf-vr);
+  SetSpeed(0x34,5000,vf-vr);
+  SetSpeed(0x44,5000,vf+vr);  
+}
+
+//****************************************************************************
+
+void setup() {
+  delay(1000);
+  
+  Serial.begin(9600,SERIAL_8E1);
+  Serial1.begin(100000,SERIAL_8E1);
+  
+  CAN.begin(CAN_1000KBPS);
+  
+  Motor_Reset(0x00);
+  Motor_Mode_Select(0x01,SPEEDLOOP);
+}
+void loop() {
+  int i;
+  if (Serial1.available()==18)
+    {
+      for (i=1;i<=18;i++) data_rx[i-1]=Serial1.read();
+      Dataprocess();
+    //  Serial.println(RC_Ctl.rc.ch0);
+      TransMove((RC_Ctl.rc.ch0-1024),(RC_Ctl.rc.ch1-1024),50);
+    }
+    if (Serial1.available()>18) ClearBuffer();
+
+    
+}

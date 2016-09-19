@@ -1,0 +1,31 @@
+
+T1128 000:045 SEGGER J-Link V4.68a Log File (0001ms, 0045ms total)
+T1128 000:045 DLL Compiled: Apr 12 2013 13:26:50 (0001ms, 0045ms total)
+T1128 000:045 Logging started @ 2014-07-12 11:19 (0001ms, 0045ms total)
+T1128 000:046 JLINK_SetWarnOutHandler(...) (0000ms, 0045ms total)
+T1128 000:046 JLINK_OpenEx(...)
+Firmware: J-Link ARM V8 compiled Nov 14 2012 22:34:52
+Hardware: V8.00
+S/N: 17935099
+Feature(s): RDI,FlashDL,FlashBP,JFlash  returns O.K. (0026ms, 0071ms total)
+T1128 000:072 JLINK_SetErrorOutHandler(...) (0000ms, 0071ms total)
+T1128 000:072 JLINK_ExecCommand("ProjectFile = "D:\0-Robowar程序\31-robowar_底盘主控板V3\STM32F405RGT6-小主控v3\Project\JLinkSettings.ini"", ...)  returns 0x00 (0001ms, 0072ms total)
+T1128 000:077 JLINK_ExecCommand("Device = STM32F405RG", ...)
+                JLINK_AddMirrorAreaEx(Addr = 0x00000000, Size = 0x00000000) (0000ms, 0000ms total)
+              Device "STM32F405RG" selected (1024 KB flash, 128 KB RAM).  returns 0x00 (0007ms, 0079ms total)
+T1128 000:084 JLINK_ExecCommand("DisableConnectionTimeout", ...)  returns 0x00 (0000ms, 0079ms total)
+T1128 000:084 JLINK_GetHardwareVersion()  returns 0x13880 (0000ms, 0079ms total)
+T1128 000:084 JLINK_GetDLLVersion()  returns 46801 (0000ms, 0079ms total)
+T1128 000:084 JLINK_GetFirmwareString(...) (0000ms, 0079ms total)
+T1128 000:094 JLINK_GetDLLVersion()  returns 46801 (0000ms, 0079ms total)
+T1128 000:094 JLINK_GetCompileDateTime() (0000ms, 0079ms total)
+T1128 000:097 JLINK_GetFirmwareString(...) (0000ms, 0079ms total)
+T1128 000:101 JLINK_GetHardwareVersion()  returns 0x13880 (0000ms, 0079ms total)
+T1128 000:112 JLINK_TIF_Select(JLINKARM_TIF_SWD)  returns 0x00 (0003ms, 0082ms total)
+T1128 000:115 JLINK_SetSpeed(2000) (0001ms, 0083ms total)
+T1128 000:116 JLINK_GetId()
+  ***** Error: Supply voltage too low (1 Volt is required, Measured: 0.0 Volt).
+Please check target power.STM32F2xxx/STM32F4xxx: Can not attach to CPU. Trying connect under reset.RESET (pin 15) high, but should be low. Please check target hardware.  returns 0x00000000 (0410ms, 0493ms total)
+T1128 001:521 JLINK_Close() (0010ms, 0503ms total)
+T1128 001:532 JLINK_Close() (0000ms, 0503ms total)
+T1128 001:534 JLINK_Close() (0000ms, 0503ms total)

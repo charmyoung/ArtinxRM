@@ -1,0 +1,481 @@
+#include <mcp_can.h>
+#include <SPI.h>
+#include <Servo.h>
+#include <FlexiTimer2.h>
+#include "Wire.h"
+#include "I2Cdev.h"
+#include "MPU6050.h"
+#define GAP 0.0
+#define ESC_MAX 2000.0
+#define SPEEDLOOP 0x33
+#define M2212pin1 49
+#define M2212pin2 53
+#define M370PWM 8
+#define M370DIR 29
+#define M2212SPH 90
+#define M2212SPL 20
+/* ----------------------- RC Channel Definition---------------------------- */
+#define RC_CH_VALUE_MIN ((uint16_t)364 )
+#define RC_CH_VALUE_OFFSET ((uint16_t)1024)
+#define RC_CH_VALUE_MAX ((uint16_t)1684)
+/* ----------------------- RC Switch Definition----------------------------- */
+#define RC_SW_UP ((uint16_t)1)
+#define RC_SW_MID ((uint16_t)3)
+#define RC_SW_DOWN ((uint16_t)2)
+/* ----------------------- PC Key Definition-------------------------------- */
+#define KEY_PRESSED_OFFSET_W ((uint16_t)0x01<<0)
+#define KEY_PRESSED_OFFSET_S ((uint16_t)0x01<<1)
+#define KEY_PRESSED_OFFSET_A ((uint16_t)0x01<<2)
+#define KEY_PRESSED_OFFSET_D ((uint16_t)0x01<<3)
+#define KEY_PRESSED_OFFSET_SHIFT ((uint16_t)0x01<<4)
+#define KEY_PRESSED_OFFSET_CTRL ((uint16_t)0x01<<5)
+#define KEY_PRESSED_OFFSET_Q ((uint16_t)0x01<<6)
+#define KEY_PRESSED_OFFSET_E ((uint16_t)0x01<<7)
+#define KEY_PRESSED_OFFSET_R ((uint16_t)0x01<<8)
+#define KEY_PRESSED_OFFSET_F ((uint16_t)0x01<<9)
+#define KEY_PRESSED_OFFSET_G ((uint16_t)0x01<<10)
+#define KEY_PRESSED_OFFSET_Z ((uint16_t)0x01<<11)
+#define KEY_PRESSED_OFFSET_X ((uint16_t)0x01<<12)
+#define KEY_PRESSED_OFFSET_C ((uint16_t)0x01<<13)
+#define KEY_PRESSED_OFFSET_V ((uint16_t)0x01<<14)
+#define KEY_PRESSED_OFFSET_B ((uint16_t)0x01<<15)
+//*****************************Data Struct************************************
+typedef struct
+{
+	struct {
+		uint16_t ch0;
+		uint16_t ch1;
+		uint16_t ch2;
+		uint16_t ch3;
+		uint8_t s1;
+		uint8_t s2;
+	}rc;
+	struct {
+		int16_t x;
+		int16_t y;
+		int16_t z;
+		uint8_t press_l;
+		uint8_t press_r;
+	}mouse;
+	struct {
+		uint16_t v;
+	}key;
+}RC_Ctl_t;
+typedef struct
+{
+	float minAngle;
+	float maxAngle;
+	float defualtAngle;
+	float targetAngle;
+	float thisAngle;
+        double thisSpeed;
+	long targetCurrent;
+	long thisCurrent;
+	int Hall;
+}M6025;
+static RC_Ctl_t RC_Ctl;
+M6025 Pitch,Yaw;
+MCP_CAN CAN(10);
+Servo M2212a;
+Servo M2212b;
+int M2212SP;
+int MoveSpeed;
+unsigned char Data[8];
+unsigned char CAN_ID;
+int CAN_ID_TX,CAN_ID_RX;
+unsigned char data_rx[18];
+unsigned char CAN_Buffer[8];
+unsigned char len = 0;
+int shootflag,lastkey,shootflag1;
+MPU6050 accelgyro;
+int16_t ax, ay, az;
+int16_t gx, gy, gz;
+double MPU6050errX,MPU6050errY;
+//***************************Single Motor Control*****************************
+void Motor_Reset(unsigned char conf)        //Chassis motor reset
+{
+	CAN_ID = conf;
+	Data[0] = 0x55;
+	Data[1] = 0x55;
+	Data[2] = 0x55;
+	Data[3] = 0x55;
+	Data[4] = 0x55;
+	Data[5] = 0x55;
+	Data[6] = 0x55;
+	Data[7] = 0x55;
+	CAN.sendMsgBuf(CAN_ID, 0, 8, Data);
+	Serial.println("RESET");
+	delay(100);
+}
+void Motor_Mode_Select(unsigned char id,unsigned char mode_in)  //Chassis motor mode select
+{
+	CAN_ID =  id;
+	Data[0] = mode_in;
+	Data[1] = 0x55;
+	Data[2] = 0x55;
+	Data[3] = 0x55;
+	Data[4] = 0x55;
+	Data[5] = 0x55;
+	Data[6] = 0x55;
+	Data[7] = 0x55;
+	CAN.sendMsgBuf(CAN_ID, 0, 8,Data);
+	delay(100);
+}
+void SetSpeed(unsigned char id,int temp_pwm,int temp_speed)    //Chassis Motor Speed Set
+{
+	CAN_ID = id;
+	Data[0] = (unsigned char)((temp_pwm>>8)&0xff);
+	Data[1] = (unsigned char)(temp_pwm&0xff);
+	Data[2] = (unsigned char)((temp_speed>>8)&0xff);
+	Data[3] = (unsigned char)(temp_speed&0xff);
+	Data[4] = 0x55;
+	Data[5] = 0x55;
+	Data[6] = 0x55;
+	Data[7] = 0x55;
+	CAN.sendMsgBuf(CAN_ID, 0, 8, Data);
+}
+//************************Remote Controller&Data Process***********************************
+void ClearBuffer()    //Clear Serial Buffer Pool
+{
+	char t;
+	while(Serial1.available()>0) t=Serial1.read() ;
+}
+
+void ReadBuffer()
+{
+	int i;
+	if (Serial1.available()%18==0&&Serial1.available()>=18 )    
+	  for (i=1;i<=18;i++) data_rx[i-1]=Serial1.read();              
+	else ClearBuffer();
+}
+void Dataprocess()
+{
+	RC_Ctl.rc.ch0 = (data_rx[0]|(data_rx[1] << 8)) & 0x07ff;
+	RC_Ctl.rc.ch1 = ((data_rx[1] >> 3) | (data_rx[2] << 5)) & 0x07ff;
+	RC_Ctl.rc.ch2 = ((data_rx[2] >> 6) | (data_rx[3] << 2) |(data_rx[4] << 10)) & 0x07ff;
+	RC_Ctl.rc.ch3 = ((data_rx[4] >> 1) | (data_rx[5] << 7)) & 0x07ff;
+	RC_Ctl.rc.s1 = ((data_rx[5] >> 4)& 0x000C) >> 2;
+	RC_Ctl.rc.s2 = ((data_rx[5] >> 4)& 0x0003);
+	RC_Ctl.mouse.x = data_rx[6] | (data_rx[7] << 8);
+	RC_Ctl.mouse.y = data_rx[8] | (data_rx[9] << 8);
+	RC_Ctl.mouse.z = data_rx[10] | (data_rx[11] << 8);
+	RC_Ctl.mouse.press_l = data_rx[12];
+	RC_Ctl.mouse.press_r = data_rx[13];
+	RC_Ctl.key.v = data_rx[14] | (data_rx[15] << 8);
+}
+
+void Send_Command()
+{
+	if(RC_Ctl.rc.s1==1){
+	TransMove((RC_Ctl.rc.ch0-1024),(RC_Ctl.rc.ch1-1024),(RC_Ctl.rc.ch2-1024),150);}
+	else if(RC_Ctl.rc.s1==3){
+	TransMove((RC_Ctl.rc.ch0-1024),(RC_Ctl.rc.ch1-1024),(RC_Ctl.rc.ch2-1024),80);}
+	else if(RC_Ctl.rc.s1==2){
+	TransMove((RC_Ctl.rc.ch0-1024),(RC_Ctl.rc.ch1-1024),(RC_Ctl.rc.ch2-1024),30);}
+	Channel_S2(RC_Ctl.rc.s2);
+        lastkey=RC_Ctl.rc.s2;
+        if (RC_Ctl.mouse.y>2) Pitch.targetAngle += -15;
+        if (RC_Ctl.mouse.y<-2) Pitch.targetAngle += 15;
+	if (RC_Ctl.mouse.x>2) Yaw.targetAngle += -20;
+        if (RC_Ctl.mouse.x<-2) Yaw.targetAngle += 20;
+
+	Set_M6025(Pitch.targetAngle,Yaw.targetAngle);
+	Fire();
+        M2212a.write(M2212SP);
+	M2212b.write(M2212SP);
+	Keyboard_Set();
+}
+
+void Keyboard_Set()
+{
+        M2212_Move(KEY_PRESSED_OFFSET_G & RC_Ctl.key.v);//G pressed	
+        MoveSpeed=80;
+        if (KEY_PRESSED_OFFSET_SHIFT & RC_Ctl.key.v) MoveSpeed=150;//Shift pressed
+        //else MoveSpeed=100;
+	if (KEY_PRESSED_OFFSET_CTRL & RC_Ctl.key.v) MoveSpeed=30;//Ctrl pressed
+       // else MoveSpeed=100;
+        
+        int key_W = KEY_PRESSED_OFFSET_W & RC_Ctl.key.v; if (key_W!=0) key_W=1;
+        int key_A = KEY_PRESSED_OFFSET_A & RC_Ctl.key.v; if (key_A!=0) key_A=1;
+        int key_S = KEY_PRESSED_OFFSET_S & RC_Ctl.key.v; if (key_S!=0) key_S=1;
+        int key_D = KEY_PRESSED_OFFSET_D & RC_Ctl.key.v; if (key_D!=0) key_D=1;
+        int key_Q = KEY_PRESSED_OFFSET_Q & RC_Ctl.key.v; if (key_Q!=0) key_Q=1;
+        int key_E = KEY_PRESSED_OFFSET_E & RC_Ctl.key.v; if (key_E!=0) key_E=1;
+	TransMove((key_D-key_A)*660,(key_W-key_S)*660,(key_E-key_Q)*660,MoveSpeed);
+
+	if (KEY_PRESSED_OFFSET_R & RC_Ctl.key.v) ;//R pressed >>>> Reloading signal send
+	if (KEY_PRESSED_OFFSET_F & RC_Ctl.key.v) ;//F pressed >>>> Laser on/off
+	if (KEY_PRESSED_OFFSET_Z & RC_Ctl.key.v) ;//Z pressed
+	if (KEY_PRESSED_OFFSET_X & RC_Ctl.key.v) ;//X pressed
+	if (KEY_PRESSED_OFFSET_C & RC_Ctl.key.v) ;//C pressed
+	if (KEY_PRESSED_OFFSET_V & RC_Ctl.key.v) ;//V pressed
+	if (KEY_PRESSED_OFFSET_B & RC_Ctl.key.v) ;//B pressed
+}
+
+void M2212_Move(int key)
+{
+	if (key!=shootflag){
+		if (key!=0)
+		{
+			if (M2212SP==M2212SPL) M2212SP=M2212SPH;
+			else M2212SP=M2212SPL;
+		}
+		shootflag=key;
+	}
+}
+void Channel_S2(int key)
+{
+  if (shootflag1==1 && key==1 && lastkey!=key)
+  {
+    M2212SP=M2212SPL;
+    shootflag1=0;
+   //Serial.println("Close");
+  }
+  else
+  if (shootflag1==0 && key==1 && lastkey!=key)
+  {
+    M2212SP=M2212SPH;
+    shootflag1=1;
+    //Serial.println("ON");  
+}
+}
+//****************************Chassis Control*********************************
+long maxs(long a,long b,long c)
+{
+	if (a>b){
+	if(a>c) return a;else return c;}
+	else if (b>c) return b;else return c;
+}
+
+void TransMove(int x,int y,int z,long temp_speed)
+{
+	long vf,vtr,vrr,vt,top_speed;
+	top_speed=((long)maxs(abs(x),abs(y),abs(z))*temp_speed)/660;
+	vt=abs(x)+abs(y)+abs(z);
+	vf=0;vtr=0;vrr=0;
+	if (vt!=0)
+	{
+		vf=(y*top_speed)/vt;
+		vtr=(x*top_speed)/vt;
+		vrr=(z*top_speed)/vt;
+	}
+	SetSpeed(0x14,5000,vf+vtr+vrr);
+	SetSpeed(0x24,5000,vf-vtr-vrr);
+	SetSpeed(0x34,5000,vf-vtr+vrr);
+	SetSpeed(0x44,5000,vf+vtr-vrr);
+}
+
+//********************************Motor6025*************************************
+
+void Motor6025_CAN_Send(int16_t current_201,int16_t current_202,int16_t current_203)
+{
+	CAN_ID_TX = 0x200;
+	Data[0] = (unsigned char)(current_201 >> 8);
+	Data[1] = (unsigned char)current_201;
+	Data[2] = (unsigned char)(current_202 >> 8);
+	Data[3] = (unsigned char)current_202;
+	Data[4] = (unsigned char)(current_203 >> 8);
+	Data[5] = (unsigned char)current_203;
+	Data[6] = 0x00;
+	Data[7] = 0x00;
+	CAN.sendMsgBuf(CAN_ID_TX, 0, 8, Data);
+}
+
+void Motor6025_CAN_Receive()
+{
+	if(CAN_MSGAVAIL == CAN.checkReceive())
+	{
+		CAN.readMsgBuf(&len,CAN_Buffer);
+		CAN_ID_RX=CAN.getCanId();
+	}
+	switch (CAN_ID_RX)
+	{
+		case 0x201:
+		{
+			Pitch.thisAngle=(float)(CAN_Buffer[0] << 8 | CAN_Buffer[1]);
+			Pitch.thisCurrent=(int)(CAN_Buffer[2] << 8 | CAN_Buffer[3])/(-3);
+			Pitch.targetCurrent=(int)(CAN_Buffer[4] << 8 | CAN_Buffer[5])/(-5);
+			Pitch.Hall=(int)CAN_Buffer[6];
+			break;
+		}
+		case 0x203:
+		{
+			Yaw.thisAngle=(long)(CAN_Buffer[0] << 8 | CAN_Buffer[1]);
+			Yaw.thisCurrent=(long)(CAN_Buffer[2] << 8 | CAN_Buffer[3])/(-3);
+			Yaw.targetCurrent=(long)(CAN_Buffer[4] << 8 | CAN_Buffer[5])/(-5);
+			Yaw.Hall=(int)CAN_Buffer[6];
+			break;
+		}
+		default: break;
+	}
+}
+
+float Velocity_Control_Yaw(float current_velocity_203,float target_velocity_203)
+{
+    const float v_p = 20.0;
+    const float v_d = 0.0;
+    static float error_v[2] = {0.0,0.0};
+    static float output = 0;
+    if(abs(current_velocity_203) < GAP) current_velocity_203 = 0.0;
+    error_v[0] = error_v[1];
+    error_v[1] = target_velocity_203 - current_velocity_203;
+    output = error_v[1] * v_p + (error_v[1] - error_v[0]) * v_d;
+    if(output > ESC_MAX) output = ESC_MAX;
+    if(output < -ESC_MAX) output = -ESC_MAX;
+    return -output;
+}
+float Velocity_Control_Pitch(float current_velocity_201,float target_velocity_201)
+{
+    const float v_p = 10.0;
+    const float v_d = 0;
+    static float error_v[2] = {0.0,0.0};
+    static float output = 0;
+    if(abs(current_velocity_201) < GAP) current_velocity_201 = 0.0;
+    error_v[0] = error_v[1];
+    error_v[1] = target_velocity_201 - current_velocity_201;
+    output = error_v[1] * v_p + (error_v[1] - error_v[0]) * v_d;
+    if(output > ESC_MAX) output = ESC_MAX;
+    if(output < -ESC_MAX) output = -ESC_MAX;
+    return -output;
+}
+
+float Position_Control_Pitch(float current_position_201,float target_position_201)
+{
+	const float l_p = 20.5;  //20.5
+	const float l_i = 0.0;   //0.0
+	const float l_d = 0.0;  //0,0
+        static float error_l[2] = {0.0,0.0};
+	static float output = 0;
+	static float inte = 0;
+	error_l[0] = error_l[1];
+	error_l[1] = target_position_201 - current_position_201;
+	inte += error_l[1];
+	output = error_l[1] * l_p +inte * l_i+(error_l[1] - error_l[0]) * l_d;
+	if(output > ESC_MAX) output = ESC_MAX;
+	if(output < -ESC_MAX) output = -ESC_MAX;
+	return output;
+}
+
+float Position_Control_Yaw(float current_position_203,float target_position_203)
+{
+	const float l_p = 20.0;//30.010     3#5#:0.760
+	const float l_i = 0.0;//0.0    0.000035;
+	const float l_d =0.5;//0.5    3.5;
+        static float error_l[3] = {0.0,0.0,0.0};
+	static float output = 0;
+	error_l[0] = error_l[1];
+	error_l[1] = error_l[2];
+	error_l[2] = target_position_203 - current_position_203;
+	output = error_l[2] * l_p + error_l[2] * l_i+ (error_l[2] - error_l[1]) * l_d;
+	if(output > ESC_MAX) output = ESC_MAX;
+	if(output < -ESC_MAX) output = -ESC_MAX;
+	return -output;
+}
+
+void Set_Position_Yaw(float targetPos)
+{
+        float pwm;
+	Yaw.targetAngle=targetPos;
+	pwm=Velocity_Control_Yaw(Yaw.thisSpeed,Position_Control_Yaw(Yaw.thisAngle/22.75,Yaw.targetAngle/22.75));
+	if(Yaw.targetAngle > Yaw.maxAngle) Yaw.targetAngle = Yaw.maxAngle;
+	if(Yaw.targetAngle < Yaw.minAngle) Yaw.targetAngle = Yaw.minAngle;
+       pwm=pwm/100;
+       pwm=pwm*100;
+      // Serial.println(pwm);
+	Yaw.targetCurrent=pwm;
+}
+void Set_Position_Pitch(float targetPos)
+{
+	float pwm;
+        Pitch.targetAngle=targetPos;
+	if(Pitch.targetAngle > Pitch.maxAngle) Pitch.targetAngle = Pitch.maxAngle;
+	if(Pitch.targetAngle < Pitch.minAngle) Pitch.targetAngle = Pitch.minAngle;
+        pwm=Velocity_Control_Pitch(Pitch.thisSpeed,Position_Control_Pitch(Pitch.thisAngle/22.75,Pitch.targetAngle/22.75))-500;
+       
+       pwm=pwm/100;
+       pwm=pwm*100;
+       //Serial.println(pwm);
+	Pitch.targetCurrent=-pwm;
+}
+void Set_M6025(float posPitch,float posYaw)
+{
+	Motor6025_CAN_Receive();
+        MPU6050_DataProcess();
+	Set_Position_Pitch(posPitch);
+	Set_Position_Yaw(posYaw);
+	Motor6025_CAN_Send(Pitch.targetCurrent,0,Yaw.targetCurrent);
+}
+//********************************M2212**************************************
+void Fire()
+{
+        digitalWrite(M370DIR,LOW);
+        analogWrite(M370PWM,0);
+	if (RC_Ctl.mouse.press_r==1) digitalWrite(M370DIR,HIGH);
+	if (RC_Ctl.mouse.press_l==1) digitalWrite(M370DIR,LOW);
+        if (RC_Ctl.mouse.press_l==1&& RC_Ctl.mouse.press_r==1) analogWrite(M370PWM,120);
+        else analogWrite(M370PWM,RC_Ctl.mouse.press_l*60+RC_Ctl.mouse.press_r*195);
+        if (shootflag1==1 && RC_Ctl.rc.s2==2) 
+        {
+          digitalWrite(M370DIR,LOW);
+          analogWrite(M370PWM,60);
+        }
+        
+
+}
+//*************************MPU6050********************************************
+
+void MPU6050_DataProcess()
+{
+        accelgyro.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+        Yaw.thisSpeed=-(double)(gx-MPU6050errX)/131;
+        Pitch.thisSpeed=-(double)(gy-MPU6050errY)/131;
+  
+}
+//****************************************************************************
+void setup() {
+	FlexiTimer2::set(3, ReadBuffer);
+	Wire.begin();
+        Serial.begin(38400);
+        accelgyro.initialize();
+        int flag=0;
+        for (flag=1;flag<=100;flag++){
+          accelgyro.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+          MPU6050errX+=gx;
+          MPU6050errY+=gy;
+        }
+        MPU6050errX=MPU6050errX/100;
+        MPU6050errY=MPU6050errY/100;
+	Serial1.begin(100000,SERIAL_8E1);
+
+	pinMode(M370PWM,OUTPUT);
+	pinMode(M370DIR,OUTPUT);
+
+        digitalWrite(M370DIR,LOW);
+	digitalWrite(M370PWM,0);
+	Yaw.targetAngle=2900;
+	Yaw.minAngle=650;
+	Yaw.maxAngle=4900;
+	Pitch.targetAngle=4700;
+	Pitch.minAngle=4000;
+	Pitch.maxAngle=4900;
+	CAN.begin(CAN_1000KBPS);
+	M2212a.attach(M2212pin1);
+	M2212b.attach(M2212pin2);
+	M2212a.write(M2212SPL);
+	M2212b.write(M2212SPL);
+	M2212SP=M2212SPL;
+	shootflag=0;
+        MoveSpeed=80;
+	Motor_Reset(0x00);
+	Motor_Mode_Select(0x01,SPEEDLOOP);
+	delay(100);
+	FlexiTimer2::start();
+}
+void loop() 
+{
+	Dataprocess();
+        Send_Command();
+ //  Serial.print(Yaw.thisAngle);
+  //  Serial.print("      ");
+    //Serial.println(Pitch.thisAngle);
+}

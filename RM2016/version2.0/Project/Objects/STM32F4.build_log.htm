@@ -1,0 +1,153 @@
+<html>
+<body>
+<pre>
+<h1>礦ision Build Log</h1>
+<h2>Tool Versions:</h2>
+IDE-Version: μVision V5.14.0.0
+Copyright (C) 2015 ARM Ltd and ARM Germany GmbH. All rights reserved.
+License Information: Charm Young, ArtisanThinking, LIC=KIVLQ-NAUX5-5ATDF-6XC8U-Q76GE-KQRH2
+ 
+Tool Versions:
+Toolchain:       MDK-ARM Professional  Version: 5.14.0.0
+Toolchain Path:  D:\Keil_v5\ARM\ARMCC\Bin
+C Compiler:      Armcc.exe V5.05 update 1 (build 106)
+Assembler:       Armasm.exe V5.05 update 1 (build 106)
+Linker/Locator:  ArmLink.exe V5.05 update 1 (build 106)
+Library Manager: ArmAr.exe V5.05 update 1 (build 106)
+Hex Converter:   FromElf.exe V5.05 update 1 (build 106)
+CPU DLL:         SARMCM3.DLL V5.14.0.0
+Dialog DLL:      DCM.DLL V1.13.1.0
+Target DLL:      STLink\ST-LINKIII-KEIL_SWO.dll V2.0.14.0_KEIL
+Dialog DLL:      TCM.DLL V1.14.4.0
+ 
+<h2>Project:</h2>
+C:\Users\CharmYoung\Desktop\version2.0 - in mpu6050版本\version2.0\Project\STM32F4.uvprojx
+Project File Date:  07/12/2016
+
+<h2>Output:</h2>
+Build target 'STM32F4'
+compiling main.c...
+compiling stm32f4xx_it.c...
+compiling led.c...
+compiling buzzer.c...
+compiling delay.c...
+compiling pwm.c...
+compiling timer.c...
+compiling can1.c...
+compiling can2.c...
+compiling usart2.c...
+compiling usart3.c...
+compiling dbus.c...
+compiling usart1.c...
+compiling chassis_control.c...
+compiling pid_algorithm.c...
+..\Mylib\pid_algorithm.c(32): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+      if(abs(current_velocity_206) < GAP)
+..\Mylib\pid_algorithm.c(43): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+      if(output > ESC_MAX)
+..\Mylib\pid_algorithm.c(80): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+      if(output > ESC_MAX)
+..\Mylib\pid_algorithm.c(104): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+      if(abs(current_velocity_205) < GAP)
+..\Mylib\pid_algorithm.c(115): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+      if(output > ESC_MAX)
+..\Mylib\pid_algorithm.c(149): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+      if(output > ESC_MAX)
+..\Mylib\pid_algorithm.c(183): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+      if(output > ESC_MAX)
+..\Mylib\pid_algorithm.c(217): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+      if(output > ESC_MAX)
+..\Mylib\pid_algorithm.c(254): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+      if(output > ESC_MAX)
+..\Mylib\pid_algorithm.c: 9 warnings, 0 errors
+compiling initialization.c...
+compiling gimbal_control.c...
+compiling shoot_control.c...
+compiling nvic.c...
+compiling laser.c...
+compiling encoder.c...
+compiling sdbus.c...
+..\Mylib\sdbus.c(45): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+                        Pitch.targetAngle += ((float)sdbus.PitchAngle/360.)*8192; 
+..\Mylib\sdbus.c(49): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+                        Yaw.targetAngle += ((float)sdbus.YawAngle/360.)*8192;
+..\Mylib\sdbus.c: 2 warnings, 0 errors
+compiling misc.c...
+compiling stm32f4xx_tim.c...
+compiling stm32f4xx_adc.c...
+compiling stm32f4xx_rcc.c...
+compiling stm32f4xx_can.c...
+compiling stm32f4xx_exti.c...
+compiling stm32f4xx_gpio.c...
+compiling stm32f4xx_dma.c...
+compiling stm32f4xx_usart.c...
+compiling stm32f4xx_syscfg.c...
+compiling system_stm32f4xx.c...
+assembling startup_stm32f4xx.s...
+compiling stm32f4xx_i2c.c...
+compiling mpu6050_hmc5883l_driver.c...
+..\MPU6050_HMC5883L\mpu6050_hmc5883l_driver.c(143): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+                                HMC5883L_Real_Data.Mag_X = -(float)HMC5883L_Raw_Data.Mag_Y/1090.;//单位Gauss，根据增益1090计算，在hmc5883l配置中可修改增益模式；
+..\MPU6050_HMC5883L\mpu6050_hmc5883l_driver.c(180): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+          MPU6050_Real_Data.Temp =   (float)(MPU6050_Raw_Data.Temp)/340.0+36.53;//见datasheet 31 of 47
+..\MPU6050_HMC5883L\mpu6050_hmc5883l_driver.c(181): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+          MPU6050_Real_Data.Gyro_X = -(float)(MPU6050_Raw_Data.Gyro_X - gyroADC_X_offset)/65.5;     //见datasheet 32 of 47
+..\MPU6050_HMC5883L\mpu6050_hmc5883l_driver.c(182): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+          MPU6050_Real_Data.Gyro_Y = -(float)(MPU6050_Raw_Data.Gyro_Y - gyroADC_Y_offset)/65.5;     //见datasheet 32 of 47
+..\MPU6050_HMC5883L\mpu6050_hmc5883l_driver.c(183): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+          MPU6050_Real_Data.Gyro_Z = (float)(MPU6050_Raw_Data.Gyro_Z - gyroADC_Z_offset)/65.5;     //见datasheet 32 of 47
+..\MPU6050_HMC5883L\mpu6050_hmc5883l_driver.c(206): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+        x_temp=x_temp/1000.00;
+..\MPU6050_HMC5883L\mpu6050_hmc5883l_driver.c(207): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+        y_temp=y_temp/1000.00;  
+..\MPU6050_HMC5883L\mpu6050_hmc5883l_driver.c(208): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+        z_temp=z_temp/1000.00;
+..\MPU6050_HMC5883L\mpu6050_hmc5883l_driver.c: 8 warnings, 0 errors
+compiling mpu6050_hmc5883l_i2c.c...
+compiling mpu6050_hmc5883l_interrupt.c...
+..\MPU6050_HMC5883L\mpu6050_hmc5883l_interrupt.c(22): warning:  #177-D: variable "nvic" was declared but never referenced
+      NVIC_InitTypeDef    nvic;
+..\MPU6050_HMC5883L\mpu6050_hmc5883l_interrupt.c: 1 warning, 0 errors
+compiling mpu6050_hmc5883l_process.c...
+..\MPU6050_HMC5883L\mpu6050_hmc5883l_process.c(76): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+      Accel_Raw_Average_Data.X = (float)temp_accel_x / 10.0;
+..\MPU6050_HMC5883L\mpu6050_hmc5883l_process.c(77): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+      Accel_Raw_Average_Data.Y = (float)temp_accel_y / 10.0;
+..\MPU6050_HMC5883L\mpu6050_hmc5883l_process.c(78): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+      Accel_Raw_Average_Data.Z = (float)temp_accel_z / 10.0;
+..\MPU6050_HMC5883L\mpu6050_hmc5883l_process.c(145): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+                ini_theta=-atan(temp_ini_ax/1.07);//rad
+..\MPU6050_HMC5883L\mpu6050_hmc5883l_process.c(170): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+                AHRS_Data.EulerAngle_Yaw= atan2( 2 * q1 * q2 + 2 * q0 * q3,1.0 - 2.0 * ( q2 * q2 + q3 * q2 ) ) * (180.0/3.14159265);//psi
+..\MPU6050_HMC5883L\mpu6050_hmc5883l_process.c(359): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+                                if(abs(accel_xn)<0.06){accel_xn=0;}
+..\MPU6050_HMC5883L\mpu6050_hmc5883l_process.c(360): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+                                if(abs(accel_yn)<0.06){accel_yn=0;}
+..\MPU6050_HMC5883L\mpu6050_hmc5883l_process.c(404): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+                                AHRS_Data.EulerAngle_Yaw= atan2( 2 * q1q2 + 2 * q0q3,1.0 - 2.0 * ( q2q2 + q3q3 ) ) * (180.0/3.14159265);//不准
+..\MPU6050_HMC5883L\mpu6050_hmc5883l_process.c: 8 warnings, 0 errors
+linking...
+Program Size: Code=39376 RO-data=952 RW-data=464 ZI-data=1240  
+FromELF: creating hex file...
+".\Objects\STM32F4.axf" - 0 Error(s), 28 Warning(s).
+
+<h2>Software Packages used:</h2>
+
+Package Vendor: ARM
+                http://www.keil.com/pack/ARM.CMSIS.4.2.0.pack
+                ARM::CMSIS:CORE:3.40.0
+                CMSIS (Cortex Microcontroller Software Interface Standard)
+   * Component: CORE Version: 3.40.0
+
+<h2>Collection of Component include folders:</h2>
+  C:\Users\CharmYoung\Desktop\version2.0 - in mpu6050版本\version2.0\Project\RTE
+  D:\Keil_v5\ARM\PACK\ARM\CMSIS\4.2.0\CMSIS\Include
+  D:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.9.0
+
+<h2>Collection of Component Files used:</h2>
+
+   * Component: ARM::CMSIS:CORE:3.40.0
+      Source file:   CMSIS\UserCodeTemplates\ARM\ITM_Retarget.c
+</pre>
+</body>
+</html>
