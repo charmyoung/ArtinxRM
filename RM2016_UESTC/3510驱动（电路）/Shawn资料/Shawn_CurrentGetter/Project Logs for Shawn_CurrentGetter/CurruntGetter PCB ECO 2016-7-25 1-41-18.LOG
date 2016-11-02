@@ -1,0 +1,9 @@
+Added Component: Designator=1(Via_M3)
+Added Component: Designator=2(Via_M3)
+Added Component: Designator=3(Via_M3)
+Added Component: Designator=4(Via_M3)
+Added Member To Class: ClassName=CurruntGetter Member=Component 1 Via_M3
+Added Member To Class: ClassName=CurruntGetter Member=Component 2 Via_M3
+Added Member To Class: ClassName=CurruntGetter Member=Component 3 Via_M3
+Added Member To Class: ClassName=CurruntGetter Member=Component 4 Via_M3
+Added Room: Name=CurruntGetter
