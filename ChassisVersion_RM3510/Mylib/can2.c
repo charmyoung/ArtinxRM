@@ -105,29 +105,36 @@ void CAN2_RX1_IRQHandler(void)
 						
 						
 						//RM3510
-						#ifdef RM3510
 						if(rx_message.StdId == 0x201)
-            {
-                RM3510_1.thisPosition = (rx_message.Data[0]<<8)|(rx_message.Data[1]);
+            {		
+								RM3510_1.lastAngle = RM3510_1.thisAngle; 
+                RM3510_1.thisAngle = (rx_message.Data[0]<<8)|(rx_message.Data[1]);
                 RM3510_1.thisVelocity = (rx_message.Data[2]<<8)|(rx_message.Data[3]);	
+								RM3510_1.thisPosition += (double)GetAngleDiff(RM3510_1.lastAngle,RM3510_1.thisAngle)/8191.0;
+								
 						}	
 						if(rx_message.StdId == 0x202)
             {
-                RM3510_2.thisPosition = (rx_message.Data[0]<<8)|(rx_message.Data[1]);
+								RM3510_2.lastAngle = RM3510_2.thisAngle;
+                RM3510_2.thisAngle = (rx_message.Data[0]<<8)|(rx_message.Data[1]);
                 RM3510_2.thisVelocity = (rx_message.Data[2]<<8)|(rx_message.Data[3]);	
+								RM3510_2.thisPosition += (double)GetAngleDiff(RM3510_2.lastAngle,RM3510_2.thisAngle)/8191.0;
 						}	
 				    if(rx_message.StdId == 0x203)
             {
-                RM3510_3.thisPosition = (rx_message.Data[0]<<8)|(rx_message.Data[1]);
+								RM3510_3.lastAngle = RM3510_3.thisAngle;
+                RM3510_3.thisAngle = (rx_message.Data[0]<<8)|(rx_message.Data[1]);
                 RM3510_3.thisVelocity = (rx_message.Data[2]<<8)|(rx_message.Data[3]);	
+								RM3510_3.thisPosition += (double)GetAngleDiff(RM3510_3.lastAngle,RM3510_3.thisAngle)/8191.0;
 						}	
 						if(rx_message.StdId == 0x204)
             {
-                RM3510_4.thisPosition = (rx_message.Data[0]<<8)|(rx_message.Data[1]);
+								RM3510_4.lastAngle = RM3510_4.thisAngle;
+                RM3510_4.thisAngle = (rx_message.Data[0]<<8)|(rx_message.Data[1]);
                 RM3510_4.thisVelocity = (rx_message.Data[2]<<8)|(rx_message.Data[3]);	
+								RM3510_4.thisPosition += (double)GetAngleDiff(RM3510_4.lastAngle,RM3510_4.thisAngle)/8191.0;
 						}	
-						#endif
-
+						
         }
 		}
 }
@@ -153,4 +160,16 @@ void Cmd_ESC_820R(int16_t current_201,int16_t current_202,int16_t current_203,in
     //can2_tx_success_flag = 0;
     CAN_Transmit(CAN2,&tx_message);
     //while(can2_tx_success_flag == 0);
+}
+//µÃµ½½Ç¶È²î
+int GetAngleDiff(int16_t lastAngle, int16_t thisAngle)
+{
+	if(lastAngle-thisAngle<-7000){
+		return thisAngle-lastAngle-8191;	
+	}
+	else if(lastAngle-thisAngle>7000){
+		return thisAngle-lastAngle+8191;
+	}
+	else
+		return thisAngle-lastAngle;
 }

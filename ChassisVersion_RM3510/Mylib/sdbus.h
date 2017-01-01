@@ -3,8 +3,14 @@
 #include <stdint.h>
 
 typedef struct{
-int PitchAngle;
-int YawAngle;	
+double xf;
+double xtr;
+double xrr;
+	
+double w1;
+double w2;
+double w3;
+double w4;
 }SDBUS;
 
 extern SDBUS sdbus;

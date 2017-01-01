@@ -15,7 +15,7 @@ No   Version    Date     Revised By       Item       								Description
 3     1.3       6/29       yf 					  注释			   
 ************************************************************************************/
 #include "main.h"
-uint32_t a=0;
+uint32_t a=0;//debug时间
 void MPU6050_HMC5883L_Interrupt_Configuration(void)
 {
     GPIO_InitTypeDef    gpio;
@@ -65,17 +65,31 @@ void EXTI4_IRQHandler(void)
         MPU6050_Data_Filter();//主要是mpu6050加速度计的均值滤波和陀螺仪弧度制转换
 				
 				
-				 	if(DBUS_Det(dbus))//rc开启判断
-				{
-				   move_control(dbus.rc.ch0, dbus.rc.ch1, dbus.rc.ch2, dbus.rc.s1, dbus.key.v,dbus.mouse.x);
+				if(DBUS_Det(dbus))//rc开启判断
+				{		
+						if(dbus.rc.s2==2){
+							move_control(dbus.rc.ch0, dbus.rc.ch1, dbus.rc.ch2, dbus.rc.s1, dbus.key.v,dbus.mouse.x);			
+						}
+						else if(dbus.rc.s2==1){
+							ChassisMotor_Position_Control(sdbus.w1,sdbus.w2,sdbus.w3,sdbus.w4);
+						}
+						else if(dbus.rc.s2==3){
+							RM3510_1.thisPosition=0;
+							RM3510_2.thisPosition=0;
+							RM3510_3.thisPosition=0;
+							RM3510_4.thisPosition=0;
+							sdbus.w1=0;
+							sdbus.w2=0;
+							sdbus.w3=0;
+							sdbus.w4=0;
+						}
 				}
-				
 			
-				/*
-				sprintf(buffer1,"%d \n",Get_Time_Micros()-a);
-				a=Get_Time_Micros();
-				printf(buffer1);
-				*/
+				
+				//sprintf(buffer1,"%d \n",Get_Time_Micros()-a);
+				//a=Get_Time_Micros();
+				
+				
 				
 				
 				EXTI_ClearFlag(EXTI_Line4);          

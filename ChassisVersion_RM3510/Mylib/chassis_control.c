@@ -17,16 +17,11 @@ No   Version    Date     Revised By       Item       Description
 ************************************************************************************/
 #include "main.h"
 int moveSpeed;//控制的速度RPM
-
-RM3510_DATA RM3510_1={0,0,0,0,0,0,1};
-RM3510_DATA RM3510_2={0,0,0,0,0,0,2};
-RM3510_DATA RM3510_3={0,0,0,0,0,0,3};
-RM3510_DATA RM3510_4={0,0,0,0,0,0,4};
-
-RM35_DATA RM35_1;
-RM35_DATA RM35_2;
-RM35_DATA RM35_3;
-RM35_DATA RM35_4;
+//初始化电机数据
+RM3510_DATA RM3510_1={0,0,0,0,0,0,0,0,1};
+RM3510_DATA RM3510_2={0,0,0,0,0,0,0,0,2};
+RM3510_DATA RM3510_3={0,0,0,0,0,0,0,0,3};
+RM3510_DATA RM3510_4={0,0,0,0,0,0,0,0,4};
 
 
 //RM3510电调
@@ -49,9 +44,9 @@ void ChassisMotor_Velocity_Control(float vel1,float vel2,float vel3,float vel4)
 void ChassisMotor_Position_Control(float pos1,float pos2,float pos3,float pos4)
 {
 	 RM3510_1.targetPosition=pos1;
-	 RM3510_2.targetPosition=8191-pos2;
+	 RM3510_2.targetPosition=-pos2;
 	 RM3510_3.targetPosition=pos3;
-	 RM3510_4.targetPosition=8191-pos4;
+	 RM3510_4.targetPosition=-pos4;
 	
 	 RM3510_1.position_output = Position_Control_820R(RM3510_1.thisPosition, RM3510_1.targetPosition);
 	 RM3510_1.velocity_output = Velocity_Control_820R(RM3510_1.thisVelocity ,RM3510_1.position_output);
@@ -82,12 +77,12 @@ void TransMove(int x,int y,int z,long temp_speed)
 		vtr=(x*top_speed)/vt;
 		vrr=(z*top_speed)/vt;
 	}
-	//重置初始化和模式选择在main中写
+	//对于RM35来说,重置初始化和模式选择在main中写,RM3510可忽略此注释
 	
 	ChassisMotor_Velocity_Control(vf+vtr+vrr,vf-vtr-vrr,vf-vtr+vrr,vf+vtr-vrr);
 }
 
-
+                                                       
 //rc和key控制电机运动
 void move_control(uint16_t ch0, uint16_t ch1, uint16_t ch2, uint8_t s1, uint16_t v, int16_t x)
 {

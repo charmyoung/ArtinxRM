@@ -30,8 +30,13 @@ int main(void)
 		  
 			//´®¿Ú²âÊÔÀý×Ó
 			//delay_ms(50);
-
-			//delay_ms(20);
+			//printf("%d,%d\n",RM3510_1.thisPosition,RM3510_2.thisPosition);
+			//printf("%d,%d\n",RM3510_1.targetVelocity,RM3510_1.thisVelocity);
+			//printf("%d\n",Get_Time_Micros());
+			//printf(buffer1);
+			printf("StatusDemo: Wheel1:%12.6f,%5d; Wheel2:%12.6f,%5d; Wheel3:%12.6f,%5d; Wheel4:%12.6f,%5d;\n",RM3510_1.thisPosition,RM3510_1.thisVelocity,RM3510_2.thisPosition,RM3510_2.thisVelocity,RM3510_3.thisPosition,RM3510_3.thisVelocity,RM3510_4.thisPosition,RM3510_4.thisVelocity);
+			delay_ms(500);
+			
 	//	int	g=GetQuadEncoderDiff();
 			//	ShootMotorSpeedSet((int)Velocity_Control_Shoot(g,10));
 		//	sprintf(buffer1,"%d %d\n",g,PWM3);

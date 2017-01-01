@@ -59,9 +59,8 @@ float Velocity_Control_820R(float current_velocity_820R,float target_velocity_82
 float Position_Control_820R(float current_position_820R,float target_position_820R)
 {
     const float l_p = ESC_820R_POS_P;
-    const float l_i = ESC_820R_POS_I;
-    const float l_d = ESC_820R_POS_D;
-
+		const float l_i = ESC_820R_POS_I;
+		const float l_d = ESC_820R_POS_D;
     static float error_l[2] = {0.0,0.0};
     static float output = 0;
     static float inte = 0;

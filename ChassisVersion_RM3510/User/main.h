@@ -8,18 +8,18 @@
 
 
 //定义RM3510的pid
-#define ESC_820R_VEL_P 150.0//10.0
+#define ESC_820R_VEL_P 10.0//10.0
 #define ESC_820R_VEL_I 0.0
-#define ESC_820R_VEL_D 5//0.5
-#define ESC_820R_POS_P 10.0//10.0
+#define ESC_820R_VEL_D 0.5//0.5
+#define ESC_820R_POS_P 100.0//10.0
 #define ESC_820R_POS_I 0.0
-#define ESC_820R_POS_D 0.0
+#define ESC_820R_POS_D 0.1
 
 
 //底盘运动速度定义
- #define NormalSpeed 10
- #define HighSpeed 15
- #define LowSpeed 5
+ #define NormalSpeed 100
+ #define HighSpeed 150
+ #define LowSpeed 50
 
 
 //时序NVIC配置

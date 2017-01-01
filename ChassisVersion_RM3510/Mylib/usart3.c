@@ -85,7 +85,9 @@ void DMA1_Stream1_IRQHandler(void)
         DMA_ClearFlag(DMA1_Stream1, DMA_FLAG_TCIF1);
         DMA_ClearITPendingBit(DMA1_Stream1, DMA_IT_TCIF1);
 				
-				//SDBUS_Dec(&sdbus,USART_RX_BUF);	
+				SDBUS_Dec(&sdbus,USART_RX_BUF);	
+				
+			  printf("ok\n");
 		}
 }
 

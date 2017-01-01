@@ -19,10 +19,13 @@ extern  RM35_DATA RM35_4;
 typedef struct _RM3510_DATA_
 {
 	//从电调反馈读到的数值	
-	int16_t thisPosition;//处理后的反馈角度
-	int16_t thisVelocity;//反馈电流
+	
+	int16_t thisAngle;//处理后的反馈角度
+	int16_t lastAngle;
+	double thisPosition;//处理后的反馈位置
+	int16_t thisVelocity;//反馈速度
 	//目标设定数值
-	int16_t targetPosition;//目标角度
+	int16_t targetPosition;//目标位置
 	int16_t targetVelocity;//目标速度
 	//PID
 	float position_output;//位置环输出，位置环输入
